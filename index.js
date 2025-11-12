@@ -238,8 +238,6 @@ app.post("/api/events", async (req, res) => {
   }
 });
 
-// এই রুটটি Firebase Login/Register এর পর Client থেকে কল করা হবে।
-// ----------------------------------------------------
 app.post("/api/LOGIN_USER/save-user", async (req, res) => {
   const { uid, email, fullName, photoURL, role = "user" } = req.body;
   console.log("Incoming user data for MongoDB:", { uid, email });
