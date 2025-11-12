@@ -365,7 +365,7 @@ app.get("/ping", async (req, res) => {
   try {
     res.json({ message: "MongoDB Connected!" });
   } catch {
-    res.status(500).json({ error: "MongoDB Not Connected" });
+    res.status(500).json({ error: "MongoDB t Connected" });
   }
 });
 
