@@ -1,4 +1,3 @@
-// server.js
 const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
@@ -7,7 +6,6 @@ require("dotenv").config();
 const app = express();
 const port = 3000;
 
-// CORS - সব localhost + Netlify allow
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -22,7 +20,7 @@ app.use(
       if (!origin || allowed.includes(origin)) {
         callback(null, true);
       } else {
-        callback(null, true); // ডেভেলপমেন্টে সব allow
+        callback(null, true);
       }
     },
     credentials: true,
@@ -48,7 +46,7 @@ let db;
 async function connectDB() {
   if (db) return db;
   try {
-    await client.connect();
+    // await client.connect();
     db = client.db("SDEP");
     console.log("MongoDB Connected!");
     return db;
@@ -93,8 +91,6 @@ app.get("/api/events/upcoming", async (req, res) => {
   }
 });
 
-// 🌟🌟🌟 ফিক্স: My Events রুটটিকে Single Event রুটের উপরে আনা হয়েছে 🌟🌟🌟
-// My Events (নির্দিষ্ট রুট)
 app.get("/api/events/my", async (req, res) => {
   const { email } = req.query;
   if (!email) return res.status(400).json({ error: "Email required" });
@@ -115,9 +111,6 @@ app.get("/api/events/my", async (req, res) => {
   }
 });
 
-// ----------------------------------------------------
-// 💡 নতুন রুট: Joined Events (ইউজার যে ইভেন্টগুলোতে জয়েন করেছে)
-// ----------------------------------------------------
 app.get("/api/events/joined", async (req, res) => {
   const { email } = req.query;
 
@@ -129,8 +122,6 @@ app.get("/api/events/joined", async (req, res) => {
     const database = await connectDB();
     const collection = database.collection("Create_Event");
 
-    // কোয়েরি: সেই ইভেন্টগুলো খুঁজছি, যাদের joinedUsers array-এর মধ্যে এই 'email' টি আছে
-    // সর্টিং: রিকোয়্যারমেন্ট অনুযায়ী eventDate অনুসারে সাজানো (1 মানে ascend)
     const events = await collection
       .find({ joinedUsers: email })
       .sort({ eventDate: 1 })
@@ -144,7 +135,7 @@ app.get("/api/events/joined", async (req, res) => {
 });
 // ----------------------------------------------------
 
-// Single Event (প্যারামিটারাইজড রুট)
+// Single Event
 app.get("/api/events/:id", async (req, res) => {
   try {
     if (!ObjectId.isValid(req.params.id)) {
@@ -203,7 +194,7 @@ app.post("/api/events", async (req, res) => {
       title,
       description,
       eventType,
-      thumbnail1,
+      thumbnail,
       location,
       eventDate: isoDate,
       creatorEmail = "guest@example.com",
@@ -213,7 +204,7 @@ app.post("/api/events", async (req, res) => {
       !title ||
       !description ||
       !eventType ||
-      !thumbnail1 ||
+      !thumbnail ||
       !location ||
       !isoDate
     ) {
@@ -229,7 +220,7 @@ app.post("/api/events", async (req, res) => {
       title: title.trim(),
       description: description.trim(),
       eventType,
-      thumbnail1: thumbnail1.trim(),
+      thumbnail: thumbnail.trim(),
       location: location.trim(),
       eventDate,
       creatorEmail,
@@ -246,9 +237,7 @@ app.post("/api/events", async (req, res) => {
     res.status(500).json({ error: "সার্ভারে সমস্যা" });
   }
 });
-// LOGIN_USER
 
-// 💡 নতুন রুট: USER REGISTRATION / SOCIAL LOGIN (MongoDB Save/Update)
 // এই রুটটি Firebase Login/Register এর পর Client থেকে কল করা হবে।
 // ----------------------------------------------------
 app.post("/api/LOGIN_USER/save-user", async (req, res) => {
@@ -259,11 +248,10 @@ app.post("/api/LOGIN_USER/save-user", async (req, res) => {
   }
 
   try {
-    const database = await connectDB(); // 💡 নতুন কালেকশন: "users"
-    const usersCollection = database.collection("LOGIN_USER"); // Upsert অপারেশন: যদি UID ম্যাচ করে তবে আপডেট করো, না হলে নতুন করে তৈরি করো
-
+    const database = await connectDB();
+    const usersCollection = database.collection("LOGIN_USER");
     const result = await usersCollection.updateOne(
-      { uid: uid }, // কোয়েরি: UID দিয়ে ইউজার খুঁজছি
+      { uid: uid },
       {
         $set: {
           email,
@@ -276,17 +264,15 @@ app.post("/api/LOGIN_USER/save-user", async (req, res) => {
           createdAt: new Date(),
         },
       },
-      { upsert: true } // 💡 যদি ইউজার না থাকে, তবে ইনসার্ট করো
+      { upsert: true }
     );
 
     if (result.upsertedCount > 0) {
-      // নতুন ইউজার তৈরি হয়েছে
       return res.status(201).json({
         message: "New user created in MongoDB!",
         id: result.upsertedId,
       });
     } else {
-      // ইউজার আগে থেকেই ছিল, আপডেট হয়েছে
       return res.status(200).json({ message: "User data updated in MongoDB!" });
     }
   } catch (error) {
@@ -295,8 +281,6 @@ app.post("/api/LOGIN_USER/save-user", async (req, res) => {
   }
 });
 
-// Update Event
-// server.js (আপডেট করা PATCH /api/events/:id রুট)
 app.patch("/api/events/:id", async (req, res) => {
   try {
     const { creatorEmail } = req.body;
@@ -320,7 +304,7 @@ app.patch("/api/events/:id", async (req, res) => {
     }
 
     const updateData = { ...req.body };
-    delete updateData.creatorEmail; // 💡 তারিখ হ্যান্ডলিং যোগ করা হয়েছে: eventDate থাকলে তাকে Date অবজেক্টে রূপান্তর করা
+    delete updateData.creatorEmail;
 
     if (updateData.eventDate) {
       updateData.eventDate = new Date(updateData.eventDate);
@@ -342,7 +326,7 @@ app.patch("/api/events/:id", async (req, res) => {
   }
 });
 
-// Delete Event - এইটাই ফিক্স!
+// Delete Event
 app.delete("/api/events/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -379,10 +363,9 @@ app.delete("/api/events/:id", async (req, res) => {
 // Ping
 app.get("/ping", async (req, res) => {
   try {
-    await client.db("admin").command({ ping: 1 });
     res.json({ message: "MongoDB Connected!" });
   } catch {
-    res.status(500).json({ error: "MongoDB Not Connected" });
+    res.status(500).json({ error: "MongoD Connected" });
   }
 });
 
