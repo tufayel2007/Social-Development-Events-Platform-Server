@@ -56,12 +56,12 @@ async function connectDB() {
   }
 }
 
-// Home Route
+// ****************************** Home Route *******
 app.get("/", (req, res) => {
-  res.send("<h1>SDEP API চালু আছে! Server চলছে!</h1>");
+  res.send("<h1>SDEP API  is raning! Server চলছে!</h1>");
 });
 
-// Upcoming Events
+// ****************** Upcoming Events
 app.get("/api/events/upcoming", async (req, res) => {
   const { type, search } = req.query;
   try {
@@ -367,9 +367,8 @@ app.get("/ping", async (req, res) => {
   }
 });
 
-// Server Start
 app.listen(port, () => {
-  console.log(`Server চলছে: http://localhost:${port}`);
+  console.log(`Server raning: http://localhost:${port}`);
   console.log(
     `My Events URL: http://localhost:${port}/api/events/my?email=your@email.com`
   );
